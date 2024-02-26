@@ -8,30 +8,6 @@ import boto3
 from botocore.exceptions import ClientError
 import logging
 
-def upload_file(file_path):
-    bucket = "letmein0229"
-
-    object_name = file_path
-
-    location = 'ap-northeast-2'
-   
-    s3_client = boto3.client(
-    's3',
-    aws_access_key_id="AKIA2UC3EBSV25DAPDWL",
-    aws_secret_access_key="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"
-    )
-
-    try:
-        s3_client.upload_file(file_path, bucket, object_name)
-    except ClientError as e:
-        logging.error(e)
-        return None
-    
-    distribution_domain = "d1nypumamskciu"
-    image_url = f'https://{distribution_domain}.cloudfront.net/{object_name}'
-    
-    return image_url
-
 
 # In[5]:
 
