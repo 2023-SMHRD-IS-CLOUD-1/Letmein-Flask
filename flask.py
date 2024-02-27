@@ -1,15 +1,80 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[4]:
+# In[16]:
+
+
+# 함수 정의
+def s3_connection():
+    s3 = boto3.client(
+        's3',
+        aws_access_key_id="",
+        aws_secret_access_key=""
+    )
+    return s3
+
+
+# In[17]:
 
 
 import boto3
 from botocore.exceptions import ClientError
 import logging
+from datetime import datetime
+
+def upload_file(file_path):
+    bucket = "letmein0229"
+
+    object_name = file_path
+    now = datetime.now()
+    save_name = str(now.date()) +'-'+ str(now.hour)+'-' + str(now.minute)+'-' + str(now.second) + '.jpg'
+
+    location = 'ap-northeast-2'
+   
+    s3_client = s3_connection()
+
+    try:
+        s3_client.upload_file(file_path, bucket, object_name)
+    except ClientError as e:
+        logging.error(e)
+        return None
+    
+    distribution_domain = "d1nypumamskciu"
+    image_url = f'https://{distribution_domain}.cloudfront.net/{save_name}'
+    
+    return image_url
 
 
-# In[5]:
+# In[18]:
+
+
+import boto3
+from botocore.exceptions import ClientError
+import logging
+from datetime import datetime
+
+def upload_file2(file_path, filename):
+    bucket = "letmein0229"
+
+    object_name = file_path
+    now = datetime.now()
+    location = 'ap-northeast-2'
+   
+    s3_client = s3_connection()
+
+    try:
+        s3_client.upload_file(file_path, bucket, object_name)
+    except ClientError as e:
+        logging.error(e)
+        return None
+    
+    distribution_domain = "d1nypumamskciu"
+    image_url = f'https://{distribution_domain}.cloudfront.net/{filename}'
+    
+    return image_url
+
+
+# In[19]:
 
 
 import cv2
@@ -24,7 +89,7 @@ def url_to_image(url):
     return image
 
 
-# In[6]:
+# In[20]:
 
 
 from keras.preprocessing.image import img_to_array
@@ -44,7 +109,7 @@ model_path = get_file("gender_detection.model", dwnld_link,
 model = load_model(model_path)
 
 
-# In[7]:
+# In[21]:
 
 
 def gender_detect(image):
@@ -80,7 +145,7 @@ def gender_detect(image):
             return classes[1]
 
 
-# In[12]:
+# In[22]:
 
 
 import cv2
@@ -98,13 +163,7 @@ def segment(url):
     return sorted_result
 
 
-# In[13]:
-
-
-# segment("https://d1nypumamskciu.cloudfront.net/2f2f33738eca6a19edf20eee735d0f54.jpg")
-
-
-# In[16]:
+# In[23]:
 
 
 import numpy as np
@@ -138,7 +197,7 @@ def fmp(image):
         return results.pose_landmarks.landmark
 
 
-# In[17]:
+# In[24]:
 
 
 def bodytype(url):
@@ -216,7 +275,7 @@ def bodytype(url):
         return (x4-x3)/(x2-x1)
 
 
-# In[19]:
+# In[25]:
 
 
 import smtplib
@@ -254,6 +313,8 @@ from flask import Blueprint, request
 from werkzeug.utils import secure_filename
 from flask import Flask, jsonify
 import os
+import time
+import shutil
 
 bp = Blueprint('image', __name__, url_prefix='/image')
 
@@ -268,14 +329,14 @@ def Email():
     msg = request.get_json()
     email = msg['email']
     user_id = msg['user_id']
-    sendEmail(to_mail, mem_id)
+    sendEmail(email, user_id)
     return 'success'
 
 # post 방식 통신
 @app.route("/upload", methods=["POST"]) 
 def func2():
     url = 'https://d1nypumamskciu.cloudfront.net/img.jpg'
-    image = cv2.imread('data/save.jpg')
+    image = url_to_image(url)
         
     # 성별 분석. mas or woman을 반환
     gen = gender_detect(image)
@@ -304,15 +365,54 @@ def func2():
         
     return jsonify({'gender' : gen, 'body' : result})
 
-@app.route("/os")
-def test():
+@app.route("/try")
+def try1():
     msg = request.get_json()
-    image = msg['image']
+    avatar = msg['image']
     cloth = msg['cloth']
+
+    f= open("data/test_pair.txt","w+")
+    text = avatar + ' ' + cloth
+    f.write(text)
+    f.close()
+
+    os.system("python test.py --name GMM --stage GMM --workers 4 --datamode test --data_list test_pairs.txt --checkpoint checkpoints/GMM/gmm_final.pth")
+    time.sleep(1)
+
+    path = 'result/GMM/test/warp-cloth/'
+    copy = 'data/test/warp-cloth/'
+    source = avatar
+
+    from_file_path = path + source
+    to_file_path =  copy + source
+    shutil.copyfile(from_file_path, to_file_path)
+
+    path = 'result/GMM/test/warp-mask/'
+    copy = 'data/test/warp-mask/'
+    source = avatar
+
+    from_file_path = path + source
+    to_file_path =  copy + source
+    shutil.copyfile(from_file_path, to_file_path)
     
-    os.system("python test.py")
-    output = os.popen("python test.py").read()
-    print(output)
+    os.system("python test.py --name TOM --stage TOM --workers 4 --datamode test --data_list test_pairs.txt --checkpoint checkpoints/TOM/tom_final.pth").read()
+    time.sleep(1)
+    
+    s3_file = 'result/TOM/try-on/' + avatar
+    file_name = 'try-on/'+avatar[:-4]+'_'+cloth
+
+    return upload_file2(avatar)
+
+@app.route("/try2")
+def try2():
+    msg = request.get_json()
+    avatar = msg['image']
+    cloth = msg['cloth']
+
+    path = 'https://d1nypumamskciu.cloudfront.net/'
+    file_name = 'try-on/'+avatar[:-4]+'_'+cloth
+    
+    return path+file_name
 
 if __name__ == "__main__" : # main method 역할! --> 서버를 구동시키는 부분
     app.run(host = "0.0.0.0", port = "5000")
