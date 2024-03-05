@@ -11,7 +11,7 @@ Letmein 프로젝트에서 Python으로 개발한 Flask 서버
 # 참고자료
 |                     이름 | 설명                                                              |
 |-------------------------:|-------------------------------------------------------------------|
-| Letmein                    |  https://github.com/minar09/cp-vton-plus |
+| Virtual Try on                    |  https://github.com/minar09/cp-vton-plus |
 
 
 
