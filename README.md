@@ -11,7 +11,7 @@ Letmein 프로젝트에서 Python으로 개발한 Flask 서버
 # 참고자료
 |                     이름 | 설명                                                              |
 |-------------------------:|-------------------------------------------------------------------|
-| Letmein                    |      [https://github.com/2023-SMHRD-IS-CLOUD-1/Letmein/tree/main ](https://github.com/minar09/cp-vton-plus)                                                             |
-|
+| Letmein                    |  https://github.com/minar09/cp-vton-plus |
+
 
 
